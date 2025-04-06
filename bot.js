@@ -86,15 +86,17 @@ function turno(chatId) {
             delete partite[chatId]
 
         } else if (stato.errors >= 10) {
-            bot.sendMessage(chatId, `Hai perso! La parola era: ${stato.randomWord} 💀`, 
-                {
-                    reply_markup: {
-                        inline_keyboard: [
-                            [{ text: 'Inizia nuova partita', callback_data: 'newGame' }]
-                        ]
-                    }
-                });
-
+            bot.sendPhoto(chatId, fs.createReadStream("impiccato 10.png")).then(() => {
+                bot.sendMessage(chatId, `Hai perso! La parola era: ${stato.randomWord} 💀`, 
+                    {
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: 'Inizia nuova partita', callback_data: 'newGame' }]
+                            ]
+                        }
+                    });
+            })
+            
             delete partite[chatId]
 
         } else {
@@ -115,43 +117,44 @@ function hintButton(chatId) {
       ];
 
     function controllo() {
-            let lettera = lettere[Math.floor(Math.random() * lettere.length)];
+        let lettera = lettere[Math.floor(Math.random() * lettere.length)];
 
-            if (stato.word.includes(lettera)) {
-                const index = lettere.indexOf(lettera);
+        if (stato.word.includes(lettera)) {
+            const index = lettere.indexOf(lettera);
         
-                lettere.splice(index, 1);
+            lettere.splice(index, 1);
 
-                controllo()
+            controllo()
+        }
+
+        trovato=false
+
+        for (let i = 0; i < stato.randomWord.length; i++) {
+
+            if (stato.randomWord[i] === lettera) {
+                stato.word[i] = lettera;
+                trovato = true;                
             }
+        }
 
-            trovato=false
-
-            for (let i = 0; i < stato.randomWord.length; i++) {
-
-                if (stato.randomWord[i] === lettera) {
-                    stato.word[i] = lettera;
-                    trovato = true;                
-                }
-            }
-
-            if (trovato) {
-                stato.errors += stato.hint
-
-                    stato.hint+=1
-            }
-            else {
-                const index = lettere.indexOf(lettera);
+        if (!trovato) {
+            const index = lettere.indexOf(lettera);
         
-                lettere.splice(index, 1);
+            lettere.splice(index, 1);
 
-                controllo()
-            }
+            controllo()
+        }
+        else {
+            
+        }
     }
 
     let cond = stato.errors + stato.hint
     if (cond < 10) {
         controllo()
+
+        stato.errors += stato.hint
+        stato.hint+=1
 
         const path = `impiccato ${stato.errors}.png`;
     bot.sendPhoto(chatId, fs.createReadStream(path)).then(() => {
@@ -230,20 +233,22 @@ bot.on("callback_query", (query) =>{
 
     if (risposta === "surrend") {
         let stato = partite[chatId];
-        bot.sendMessage(chatId, `La parola era: ${stato.randomWord}. Prossima volta andra meglio.`,
-            {
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: 'Inizia nuova partita', callback_data: 'newGameSurrend' }]
-                    ]
-                }
-            });
+        bot.sendPhoto(chatId, fs.createReadStream("impiccato 10.png")).then(() => {
+            bot.sendMessage(chatId, `La parola era: ${stato.randomWord}. Prossima volta andra meglio.`,
+                {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: 'Inizia nuova partita', callback_data: 'newGameSurrend' }]
+                        ]
+                    }
+                });
+        })
         delete partite[chatId]
     }
 
     if (risposta === "newGameSurrend") {
 
-        bot.sendMessage(chatId, "Invia qualsiasi messaggio prima di continuare")
+        bot.sendMessage(chatId, "Invia qualsiasi messaggio per continuare")
 
         let parolaCasuale = parole[Math.floor(Math.random() * parole.length)];
         let parola = "_".repeat(parolaCasuale.length).split("");
