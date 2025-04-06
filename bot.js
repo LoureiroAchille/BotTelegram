@@ -105,6 +105,8 @@ function turno(chatId) {
 
 
 function hintButton(chatId) {
+    let stato = partite[chatId];
+
     let lettere = [
         'a', 'b', 'c', 'd', 'e', 'f', 'g',
         'h', 'i', 'j', 'k', 'l', 'm', 'n',
@@ -113,48 +115,45 @@ function hintButton(chatId) {
       ];
 
     function controllo() {
-        let stato = partite[chatId];
+            let lettera = lettere[Math.floor(Math.random() * lettere.length)];
+
+            if (stato.word.includes(lettera)) {
+                const index = lettere.indexOf(lettera);
         
-        let lettera = lettere[Math.floor(Math.random() * lettere.length)];
+                lettere.splice(index, 1);
 
-        if (stato.word.includes(lettera)) {
-            const index = lettere.indexOf(lettera);
-    
-            lettere.splice(index, 1);
-
-            controllo()
-        }
-
-        trovato=false
-
-        for (let i = 0; i < stato.randomWord.length; i++) {
-
-            if (stato.randomWord[i] === lettera) {
-                stato.word[i] = lettera;
-                trovato = true;                
+                controllo()
             }
-        }
 
-        if (trovato) {
-            stato.errors += stato.hint
+            trovato=false
 
-                stato.hint+=1
-        }
-        else {
-            const index = lettere.indexOf(lettera);
-    
-            lettere.splice(index, 1);
+            for (let i = 0; i < stato.randomWord.length; i++) {
 
-            controllo()
-        }
+                if (stato.randomWord[i] === lettera) {
+                    stato.word[i] = lettera;
+                    trovato = true;                
+                }
+            }
+
+            if (trovato) {
+                stato.errors += stato.hint
+
+                    stato.hint+=1
+            }
+            else {
+                const index = lettere.indexOf(lettera);
         
+                lettere.splice(index, 1);
+
+                controllo()
+            }
     }
-    controllo()
 
-    let stato = partite[chatId]
-    stato.sessione = false
+    let cond = stato.errors + stato.hint
+    if (cond < 10) {
+        controllo()
 
-    const path = `impiccato ${stato.errors}.png`;
+        const path = `impiccato ${stato.errors}.png`;
     bot.sendPhoto(chatId, fs.createReadStream(path)).then(() => {
         bot.sendMessage(chatId, `Parola: ${stato.word.join(" ")}`).then(() => {
             bot.sendMessage(chatId, `Lettere usate: ${stato.used.join(", ")}`, {
@@ -170,6 +169,10 @@ function hintButton(chatId) {
         })
         
     })
+
+    } else {
+        bot.sendMessage(chatId, "Non puoi usare hint (Perderesti in automatico)")
+    }
 }
 
 
@@ -231,11 +234,27 @@ bot.on("callback_query", (query) =>{
             {
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: 'Inizia nuova partita', callback_data: 'newGame' }]
+                        [{ text: 'Inizia nuova partita', callback_data: 'newGameSurrend' }]
                     ]
                 }
             });
         delete partite[chatId]
+    }
+
+    if (risposta === "newGameSurrend") {
+
+        bot.sendMessage(chatId, "Invia qualsiasi messaggio prima di continuare")
+
+        let parolaCasuale = parole[Math.floor(Math.random() * parole.length)];
+        let parola = "_".repeat(parolaCasuale.length).split("");
+    
+        partite[chatId] = {
+            randomWord: parolaCasuale,
+            word: parola,
+            errors: 0,
+            used: [],
+            hint: 1
+        }
     }
 })
 
